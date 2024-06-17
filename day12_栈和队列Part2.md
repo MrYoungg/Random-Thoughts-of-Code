@@ -333,7 +333,7 @@ public:
     - 从倒数第二层开始，对所有的父节点做下滤操作；
         <img src="./day12_栈和队列Part2.assets/自下而下建堆.gif" alt="自下而下建堆" style="zoom:50%;" />
 
-### 四、前k个高频元素
+### 四、347.前k个高频元素
 
 [代码随想录 (programmercarl.com)](https://programmercarl.com/0347.前K个高频元素.html)
 
