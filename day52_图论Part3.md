@@ -512,4 +512,177 @@ int main()
 
 ```
 
-### 
+### 十二、卡码网-104建造最大岛屿
+
+> ###### 题目描述
+>
+> 给定一个由 1（陆地）和 0（水）组成的矩阵，你最多可以将矩阵中的一格水变为一块陆地，在执行了此操作之后，矩阵中最大的岛屿面积是多少。
+>
+> 
+>
+> 岛屿面积的计算方式为组成岛屿的陆地的总数。岛屿是被水包围，并且通过水平方向或垂直方向上相邻的陆地连接而成的。你可以假设矩阵外均被水包围。
+>
+> ###### 提示信息
+>
+> ###### <img src="./day52_图论Part3.assets/20240415145559_94626.png" alt="img" style="zoom: 33%;" />
+>
+> 对于上面的案例，有如下两个位置可将 0 变成 1，使得岛屿的面积最大，即 6。<img src="./day52_图论Part3.assets/20240415145650_61097.png" alt="img" style="zoom:33%;" />
+
+[104. 建造最大岛屿 (kamacoder.com)](https://kamacoder.com/problempage.php?pid=1176)
+
+[代码随想录 (programmercarl.com)](https://programmercarl.com/kamacoder/0104.建造最大岛屿.html#思路)
+
+#### 1、思路
+
+1. 搜索出所有岛屿，并为其标上序号，并将序号与面积用map映射一一对应；
+    <img src="./day52_图论Part3.assets/image-20240729112516426.png" alt="image-20240729112516426" style="zoom:25%;" />
+2. 遍历每个海洋节点，找到与其相邻的岛屿，将面积叠加；
+3. 统计最大值；
+
+#### 2、注意点
+
+1. 不需要用visitedFlag数组记录已经访问过的陆地节点，**为不同的岛屿标上不同的序号**即可区分；
+2. 岛屿标号islandMark初始化为1，仅当遇见未标记过的陆地节点（value==1）时islandMark++，再去深搜岛屿；
+3. 在深搜找所有岛屿时（不加入海洋节点），**先记录岛屿的最大面积**，否则当地图中本身**不存在海洋节点可以添加**时，最大岛屿面积是初值0；
+4. 在每次单独遍历岛屿和基于海洋节点遍历岛屿之前，都需要将**当前岛屿面积`curIslandArea`初始化为0**；
+5. 用`unordered_map`记录**岛屿标号和面积的映射关系**，用`unordered_set`记录**当前海洋节点已经接触过的岛屿**；
+6. 遍历完当前海洋节点之后，**将unordered_set清空**，准备为下一个海洋节点服务；
+
+#### 3、代码
+
+```c++
+#include <iostream>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+using namespace std;
+
+int usingZeroFlag = false;
+int curIslandArea = 0;
+int maxIslandArea = 0;
+
+int directionOffset[4][2] = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+
+void dfs(vector<vector<int>> &islandMap, int islandMark, int row, int col)
+{
+    // 越界
+    if (row < 0 || row > islandMap.size() - 1 || col < 0 ||
+        col > islandMap[0].size() - 1) {
+        return;
+    }
+    // 遇到海洋（值为0）或者已经被编号的岛屿（值大于1）
+    if (islandMap[row][col] != 1) {
+        return;
+    }
+
+    // 标记当前节点
+    islandMap[row][col] = islandMark;
+    curIslandArea++;
+    // 继续向四个方向遍历
+    for (int i = 0; i < 4; i++) {
+        int newRow = row + directionOffset[i][0];
+        int newCol = col + directionOffset[i][1];
+
+        dfs(islandMap, islandMark, newRow, newCol);
+    }
+}
+void solve()
+{
+    // 处理输入
+    int mapRows = 0;
+    int mapColumns = 0;
+    cin >> mapRows >> mapColumns;
+
+    vector<vector<int>> islandMap(mapRows, vector<int>(mapColumns));
+    for (int row = 0; row < islandMap.size(); row++) {
+        for (int col = 0; col < islandMap[0].size(); col++) {
+            cin >> islandMap[row][col];
+        }
+    }
+
+    /* 搜索出所有岛屿，并为它们编号,记录它们对应的面积*/
+    int islandMark = 1; // 岛屿标号初始化为1，遇见未访问过的陆地节点则++
+    unordered_map<int, int> map_IslandMark_Area; // 岛屿标号和面积的映射
+
+    for (int row = 0; row < islandMap.size(); row++) {
+        for (int col = 0; col < islandMap[0].size(); col++) {
+
+            // 遍历到未标记过的陆地节点，将岛屿标号++
+            if (islandMap[row][col] == 1) {
+                islandMark++;
+            }
+
+            curIslandArea = 0;                    // 初始化当前岛屿面积
+            dfs(islandMap, islandMark, row, col); // 深搜遍历岛屿
+
+            // 先记录不加入海洋节点时，最大的岛屿面积
+            maxIslandArea = max(maxIslandArea, curIslandArea);
+
+            // 用map映射记录岛屿的标号和面积
+            if (curIslandArea != 0) {
+                // 注意每次遍历时curIslandArea都会初始化为0，如果不加判断，则映射中每个岛屿的面积都为0
+                map_IslandMark_Area[islandMark] = curIslandArea;
+            }
+        }
+    }
+
+    /*遍历所有海洋节点*/
+    unordered_set<int> visitedMark; // 用set记录已经遍历过的岛屿编号
+    for (int row = 0; row < islandMap.size(); row++) {
+        for (int col = 0; col < islandMap[0].size(); col++) {
+
+            // 初始化当前岛屿面积
+            curIslandArea = 0;
+
+            // 找到海洋节点
+            if (islandMap[row][col] == 0) {
+                
+				// 将海洋节点纳入当前岛屿面积
+                curIslandArea++; 
+
+                // 向四个方向遍历,将四周相邻的不同岛屿面积相加
+                for (int i = 0; i < 4; i++) {
+                    int newRow = row + directionOffset[i][0];
+                    int newCol = col + directionOffset[i][1];
+
+                    // 坐标越界
+                    if (newRow < 0 || newRow > islandMap.size() - 1 ||
+                        newCol < 0 || newCol > islandMap[0].size() - 1) {
+                        continue;
+                    }
+
+                    // 找到未统计过的岛屿
+                    if (islandMap[newRow][newCol] != 0 &&
+                        visitedMark.find(islandMap[newRow][newCol]) ==
+                            visitedMark.end()) {
+
+                        // 将岛屿加入"已统计"集合
+                        visitedMark.insert(islandMap[newRow][newCol]);
+
+                        // 将岛屿面积叠加
+                        curIslandArea +=
+                            map_IslandMark_Area[islandMap[newRow][newCol]];
+                    }
+                }
+                // 更新最大岛屿面积
+                maxIslandArea = max(maxIslandArea, curIslandArea);
+                // 清空岛屿"已统计"集合
+                visitedMark.clear();
+            }
+        }
+    }
+    /*遍历海洋节点结束*/
+
+    cout << maxIslandArea;
+    cin.get();
+}
+
+int main()
+{
+    solve();
+
+    cin.get();
+    return 0;
+}
+```
+
